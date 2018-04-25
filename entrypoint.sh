@@ -15,9 +15,7 @@ if [[ "${LOCAL_AS}" ]]; then
 fi
 
 if [[ ! -z "$@" ]]; then
-    # If the user has given us a command, run it.
     $@
 else
-    # Otherwise, default to running 'python'.
-    sh
+    env exabgp.log.destination=/etc/exabgp/log exabgp.log.routes=true exabgp.daemon.user=root exabgp exabgp.conf
 fi

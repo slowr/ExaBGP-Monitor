@@ -13,8 +13,7 @@ ENV PATH /tmp/exabgp/bin:/tmp/exabgp/sbin:$PATH
 EXPOSE 179
 EXPOSE 5000
 
-#RUN exabgp --fi > exabgp/etc/exabgp/exabgp.env
+RUN exabgp --fi > exabgp/etc/exabgp/exabgp.env
 RUN sed -i 's?/usr/bin/python3?'`which python`'?' server.py
 
 ENTRYPOINT ["/usr/bin/dumb-init", "bash", "entrypoint.sh"]
-#CMD env exabgp.log.destination=/etc/exabgp/log exabgp.log.routes=true exabgp.daemon.user=root exabgp exabgp.conf
