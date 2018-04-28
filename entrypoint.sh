@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 if [[ "${LOCAL_IP}" ]]; then
     echo "Changing local IP to "${LOCAL_IP}
     sed -i "s/10.0.0.3/"${LOCAL_IP}"/" exabgp.conf
@@ -14,8 +14,4 @@ if [[ "${LOCAL_AS}" ]]; then
     sed -i "s/65001/"${LOCAL_AS}"/" exabgp.conf
 fi
 
-if [[ ! -z "$@" ]]; then
-    $@
-else
-    env exabgp.log.destination=/etc/exabgp/log exabgp.log.routes=true exabgp.daemon.user=root exabgp exabgp.conf
-fi
+$@
