@@ -1,21 +1,23 @@
-#!/usr/bin/python3
+#!/usr/bin/python2
 
-async_mode = 'threading'
-
-import time
-from flask import Flask, render_template, abort
-import socketio
+import sys
 from sys import stdin, stdout, stderr
+from flask import Flask, abort
+import socketio
 import json
-import time
-from netaddr import IPNetwork, IPAddress
+import logging
+import radix
 
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+async_mode = 'threading'
 sio = socketio.Server(logger=False, async_mode=async_mode)
 app = Flask(__name__)
 app.wsgi_app = socketio.Middleware(sio, app.wsgi_app)
 app.config['SECRET_KEY'] = 'secret!'
 thread = None
 clients = {}
+hostname = 'exabgp'
 
 
 def message_parser(line):
@@ -27,19 +29,16 @@ def message_parser(line):
                     'type': 'A',
                     'timestamp': temp_message['time'],
                     'peer': temp_message['neighbor']['ip'],
-                    'host': 'exabgp',
+                    'host': hostname,
                     'path': temp_message['neighbor']['message']['update']['attribute']['as-path'],
                 }
                 for prefix in temp_message['neighbor']['message']['update']['announce']['ipv4 unicast'][origin]:
                     message['prefix'] = prefix
-                    for sid in clients.keys():
-                        try:
-                            if IPAddress(str(prefix).split('/')[0]) in clients[sid][0]:
-                                sio.emit(
-                                    'exa_message', message, room=sid, namespace='/onos')
-                        except:
-                            pass
-    except Exception as e:
+                    for sid in clients:
+                        if clients[sid][0].search_best(prefix):
+                            print('Sending to {} for {}'.format(sid, prefix))
+                            # sio.emit('exa_message', message, room=sid)
+    except:
         pass
 
 
@@ -54,25 +53,38 @@ def index():
     abort(404)
 
 
-@sio.on('connect', namespace='/onos')
-def onos_connect(sid, environ):
+@sio.on('connect')
+def artemis_connect(sid, environ):
     global thread
     if thread is None:
         thread = sio.start_background_task(exabgp_update_event)
+    sio.emit('connect')
 
 
-@sio.on('disconnect', namespace='/onos')
-def onos_disconnect(sid):
+@sio.on('disconnect')
+def artemis_disconnect(sid):
     if sid in clients:
         del clients[sid]
 
 
-@sio.on('exa_subscribe', namespace='/onos')
-def onos_exa_subscribe(sid, message):
+@sio.on('ping')
+def artemis_ping(sid):
+    sio.emit('pong', room=sid)
+
+
+@sio.on('exa_subscribe')
+def artemis_exa_subscribe(sid, message):
+    all_prefixes = []
     try:
-        clients[sid] = [IPNetwork(message['prefix']), True]
+        prefix_tree = radix.Radix()
+        for prefix in message['prefixes']:
+            prefix_tree.add(prefix)
+        clients[sid] = (prefx_tree, True)
     except:
-        pass
+        print('Invalid format received from %s'.format(str(sid)))
+
 
 if __name__ == '__main__':
+    if len(sys.argv) > 1:
+        hostname = sys.argv[1]
     app.run(host='0.0.0.0', threaded=True)

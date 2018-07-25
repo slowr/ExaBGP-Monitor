@@ -1,3 +1,10 @@
-python-socketio==1.7.6
-netaddr==0.7.19
+click==6.7
 Flask==0.12.2
+itsdangerous==0.24
+Jinja2==2.10
+MarkupSafe==1.0
+py-radix==0.10.0
+python-engineio==2.2.0
+python-socketio==1.7.6
+six==1.11.0
+Werkzeug==0.14.1
