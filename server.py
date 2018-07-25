@@ -37,7 +37,7 @@ def message_parser(line):
                     for sid in clients:
                         if clients[sid][0].search_best(prefix):
                             print('Sending to {} for {}'.format(sid, prefix))
-                            # sio.emit('exa_message', message, room=sid)
+                            sio.emit('exa_message', message, room=sid)
     except:
         pass
 
@@ -79,7 +79,7 @@ def artemis_exa_subscribe(sid, message):
         prefix_tree = radix.Radix()
         for prefix in message['prefixes']:
             prefix_tree.add(prefix)
-        clients[sid] = (prefx_tree, True)
+        clients[sid] = (prefix_tree, True)
     except:
         print('Invalid format received from %s'.format(str(sid)))
 
