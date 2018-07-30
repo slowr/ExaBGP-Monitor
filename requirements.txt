@@ -1,9 +1,15 @@
+asn1crypto==0.24.0
+cffi==1.11.5
 click==6.7
+cryptography==2.3
 Flask==0.12.2
+idna==2.7
 itsdangerous==0.24
 Jinja2==2.10
 MarkupSafe==1.0
 py-radix==0.10.0
+pycparser==2.18
+pyOpenSSL==18.0.0
 python-engineio==2.2.0
 python-socketio==1.7.6
 six==1.11.0
