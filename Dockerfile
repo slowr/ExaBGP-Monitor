@@ -4,9 +4,10 @@ MAINTAINER Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>
 WORKDIR /home
 
 COPY . ./
+RUN apk update && apk add --no-cache openssl-dev libffi-dev py-openssl
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN git clone -b 3.4 https://github.com/Exa-Networks/exabgp 
+RUN git clone -b 3.4 https://github.com/Exa-Networks/exabgp
 
 ENV PATH /home/exabgp/bin:/home/exabgp/sbin:$PATH
 

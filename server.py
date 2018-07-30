@@ -1,5 +1,3 @@
-#!/usr/bin/python2
-
 import sys
 import argparse
 from sys import stdin, stdout, stderr
