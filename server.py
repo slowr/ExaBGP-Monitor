@@ -1,6 +1,7 @@
 #!/usr/bin/python2
 
 import sys
+import argparse
 from sys import stdin, stdout, stderr
 from flask import Flask, abort
 import socketio
@@ -17,8 +18,7 @@ app.wsgi_app = socketio.Middleware(sio, app.wsgi_app)
 app.config['SECRET_KEY'] = 'secret!'
 thread = None
 clients = {}
-hostname = 'exabgp'
-
+hostname = ''
 
 def message_parser(line):
     try:
@@ -85,6 +85,16 @@ def artemis_exa_subscribe(sid, message):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        hostname = sys.argv[1]
-    app.run(host='0.0.0.0', threaded=True)
+    parser = argparse.ArgumentParser(description='ExaBGP Monitor Server')
+    parser.add_argument('--name', type=str, dest='name', default='exabgp',
+                        help='Hostname for ExaBGP monitor')
+    parser.add_argument('--ssl', type=bool, nargs='?', dest='ssl', default=False,
+                        help='Flag to use SSL')
+    args = parser.parse_args()
+
+    hostname = args.name
+
+    if args.ssl:
+        app.run(ssl_context='adhoc', host='0.0.0.0')
+    else:
+        app.run(host='0.0.0.0')
