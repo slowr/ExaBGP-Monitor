@@ -1,21 +1,20 @@
-#!/usr/bin/python
 import sys
 import argparse
-from sys import stdin
-from flask import Flask, abort, request
-from flask_socketio import SocketIO, send, emit
+from sys import stdin, stdout, stderr
+from flask import Flask, abort
+import socketio
 import json
+import logging
 import radix
-import _thread
-import time
 
-
+async_mode = 'threading'
+sio = socketio.Server(logger=False, async_mode=async_mode)
 app = Flask(__name__)
+app.wsgi_app = socketio.Middleware(sio, app.wsgi_app)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app)
+thread = None
 clients = {}
 hostname = ''
-
 
 def message_parser(line):
     try:
@@ -34,7 +33,7 @@ def message_parser(line):
                     for sid in clients:
                         if clients[sid][0].search_best(prefix):
                             print('Sending to {} for {}'.format(sid, prefix))
-                            emit('exa_message', message, room=sid)
+                            sio.emit('exa_message', message, room=sid)
     except:
         pass
 
@@ -50,25 +49,22 @@ def index():
     abort(404)
 
 
-@socketio.on('connect')
-def artemis_connect():
-    print('Received connect..')
-    emit('connect', room=request.sid)
+@sio.on('connect')
+def artemis_connect(sid, environ):
+    global thread
+    if thread is None:
+        thread = sio.start_background_task(exabgp_update_event)
+    sio.emit('connect')
 
 
-@socketio.on('disconnect')
-def artemis_disconnect():
-    print('Received disconnect..')
-    client = request.namespace
-    sid = request.sid
-    clients.pop(sid, None)
+@sio.on('disconnect')
+def artemis_disconnect(sid):
+    if sid in clients:
+        del clients[sid]
 
 
-@socketio.on('exa_subscribe')
-def artemis_exa_subscribe(message):
-    sid = request.sid
-
-    print('Received exa_subscribed from {}'.format(sid))
+@sio.on('exa_subscribe')
+def artemis_exa_subscribe(sid, message):
     all_prefixes = []
     try:
         prefix_tree = radix.Radix()
@@ -76,18 +72,20 @@ def artemis_exa_subscribe(message):
             prefix_tree.add(prefix)
         clients[sid] = (prefix_tree, True)
     except:
-        print('Invalid format received from %s'.format(sid))
+        print('Invalid format received from %s'.format(str(sid)))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ExaBGP Monitor Server')
     parser.add_argument('--name', type=str, dest='name', default='exabgp',
                         help='Hostname for ExaBGP monitor')
+    parser.add_argument('--ssl', type=bool, nargs='?', dest='ssl', default=False,
+                        help='Flag to use SSL')
     args = parser.parse_args()
 
     hostname = args.name
 
-    print('Starting Socket.IO server..')
-    _thread.start_new_thread(lambda: socketio.run(app), ())
-    exabgp_update_event()
-
+    if args.ssl:
+        app.run(ssl_context='adhoc', host='0.0.0.0')
+    else:
+        app.run(host='0.0.0.0')

@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import traceback
 from socketIO_client import SocketIO
 
 class ExaBGP():
@@ -14,13 +15,14 @@ class ExaBGP():
         with SocketIO('http://' + self.config['host']) as socketIO:
 
 
-            def on_connect():
+            def on_connect(*args):
                 print('on_connect')
-                # prefixes_ = {'prefixes': self.config['prefixes']}
-                # socketIO.emit('exa_subscribe', prefixes_)
+                prefixes_ = {'prefixes': self.config['prefixes']}
+                socketIO.emit('exa_subscribe', prefixes_)
 
-            def on_pong():
-                print('on_pong')
+
+            def on_pong(*args):
+                print('on_pong {}'.format(args))
 
 
             def exabgp_msg(bgp_message):
@@ -36,4 +38,4 @@ try:
     exa = ExaBGP(['0.0.0.0/0'], 'localhost', 5000)
     exa.start()
 except:
-    pass
+    traceback.print_exc()
