@@ -3,8 +3,7 @@ MAINTAINER Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>
 
 WORKDIR /home
 
-COPY requirements.txt ./
-COPY server.py ./
+COPY . ./
 
 RUN apk update && apk add --no-cache openssl-dev libffi-dev py-openssl
 RUN pip install --no-cache-dir -r requirements.txt

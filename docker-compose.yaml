@@ -1,7 +1,7 @@
 version: '3'
 services:
     exabgp:
-        build: .
+        build: ./monitor/
         container_name: exabgp
         hostname: exabgp
         environment:
@@ -15,13 +15,23 @@ services:
                 ipv4_address: 10.5.0.3
 
     bgpd:
-        build: ./quagga-container/
+        build: ./quagga/
         container_name: bgpd
         hostname: bgpd
         networks:
             test:
                 ipv4_address: 10.5.0.2
 
+    client:
+        build: ./client/
+        container_name: client
+        hostname: client
+        depends_on:
+            - bgpd
+            - exabgp
+        networks:
+            test:
+                ipv4_address: 10.5.0.4
 networks:
     test:
         ipam:
