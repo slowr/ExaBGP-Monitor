@@ -3,7 +3,9 @@ MAINTAINER Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>
 
 WORKDIR /home
 
-COPY . ./
+COPY requirements.txt ./
+COPY server.py ./
+
 RUN apk update && apk add --no-cache openssl-dev libffi-dev py-openssl
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -15,7 +17,6 @@ EXPOSE 179
 EXPOSE 5000
 
 RUN exabgp --fi > exabgp/etc/exabgp/exabgp.env
-RUN sed -i 's?/usr/bin/python3?'`which python`'?' server.py
+RUN sed -i 's?/usr/bin/python?'`which python`'?' server.py
 
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["env", "exabgp.log.destination=/etc/exabgp/log", "exabgp.log.routes=true", "exabgp.daemon.user=root", "exabgp", "exabgp.conf"]

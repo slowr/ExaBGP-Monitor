@@ -1,0 +1,30 @@
+version: '3'
+services:
+    exabgp:
+        build: .
+        container_name: exabgp
+        hostname: exabgp
+        environment:
+            LOCAL_HOST: 10.5.0.3
+            LOCAL_AS: 65001
+            REMOTE_HOST: 10.5.0.2
+        depends_on:
+            - bgpd
+        networks:
+            test:
+                ipv4_address: 10.5.0.3
+
+    bgpd:
+        build: ./quagga-container/
+        container_name: bgpd
+        hostname: bgpd
+        networks:
+            test:
+                ipv4_address: 10.5.0.2
+
+networks:
+    test:
+        ipam:
+            driver: default
+            config:
+                - subnet: 10.5.0.0/16
