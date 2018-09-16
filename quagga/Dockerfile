@@ -2,10 +2,9 @@ FROM alpine
 
 MAINTAINER Dimitris Mavrommatis <jim.mavrommatis@gmail.com>
 
-WORKDIR /root
+WORKDIR /home
 
-COPY entrypoint.sh .
-COPY bgpd.conf /etc/quagga/bgpd.conf
+COPY . ./
 
 RUN apk add --no-cache quagga \
     && touch /etc/quagga/zebra.conf \

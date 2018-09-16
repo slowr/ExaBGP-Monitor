@@ -1,25 +1,29 @@
+#!/usr/bin/python
+from __future__ import print_function
 import sys
 import argparse
-from sys import stdin, stdout, stderr
-from flask import Flask, abort
-import socketio
+from sys import stdin, stderr, exit
+from flask import Flask, abort, request
+from flask_socketio import SocketIO, emit
 import json
-import logging
 import radix
+import time
+import thread
 
-async_mode = 'threading'
-sio = socketio.Server(logger=False, async_mode=async_mode)
+
 app = Flask(__name__)
-app.wsgi_app = socketio.Middleware(sio, app.wsgi_app)
 app.config['SECRET_KEY'] = 'secret!'
-thread = None
+sio = SocketIO(app)
 clients = {}
 hostname = ''
+
 
 def message_parser(line):
     try:
         temp_message = json.loads(line)
         if temp_message['type'] == 'update':
+            print('message: {}'.format(temp_message))
+            print('clients: {}'.format(clients))
             for origin in temp_message['neighbor']['message']['update']['announce']['ipv4 unicast']:
                 message = {
                     'type': 'A',
@@ -30,12 +34,12 @@ def message_parser(line):
                 }
                 for prefix in temp_message['neighbor']['message']['update']['announce']['ipv4 unicast'][origin]:
                     message['prefix'] = prefix
-                    for sid in clients:
-                        if clients[sid][0].search_best(prefix):
+                    for sid, prefix_tree in clients.items():
+                        if prefix_tree.search_best(prefix):
                             print('Sending to {} for {}'.format(sid, prefix))
-                            sio.emit('exa_message', message, room=sid)
+                            emit('exa_message', message, room=sid)
     except:
-        pass
+        print(traceback.format_exc())
 
 
 def exabgp_update_event():
@@ -44,48 +48,37 @@ def exabgp_update_event():
         messages = message_parser(line)
 
 
-@app.route('/')
-def index():
-    abort(404)
-
-
-@sio.on('connect')
-def artemis_connect(sid, environ):
-    global thread
-    if thread is None:
-        thread = sio.start_background_task(exabgp_update_event)
-    sio.emit('connect')
-
-
 @sio.on('disconnect')
-def artemis_disconnect(sid):
-    if sid in clients:
-        del clients[sid]
+def sio_disconnect():
+    print('disconnect')
+    sid = request.sid
+    clients.pop(sid, None)
 
 
 @sio.on('exa_subscribe')
-def artemis_exa_subscribe(sid, message):
+def sio_exa_subscribe(message):
+    sid = request.sid
+
+    print('exa_subscribe {}'.format(sid))
     all_prefixes = []
     try:
         prefix_tree = radix.Radix()
         for prefix in message['prefixes']:
             prefix_tree.add(prefix)
-        clients[sid] = (prefix_tree, True)
+        clients[sid] = prefix_tree
     except:
-        print('Invalid format received from %s'.format(str(sid)))
+        print('Invalid format received from %s'.format(sid))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ExaBGP Monitor Server')
     parser.add_argument('--name', type=str, dest='name', default='exabgp',
                         help='Hostname for ExaBGP monitor')
-    parser.add_argument('--ssl', type=bool, nargs='?', dest='ssl', default=False,
-                        help='Flag to use SSL')
     args = parser.parse_args()
 
     hostname = args.name
 
-    if args.ssl:
-        app.run(ssl_context='adhoc', host='0.0.0.0')
-    else:
-        app.run(host='0.0.0.0')
+    print('Starting Socket.IO server..')
+    thread.start_new_thread(lambda: sio.run(app), ())
+    exabgp_update_event()
+
