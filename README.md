@@ -16,8 +16,13 @@ To run a simple test case use `docker-compose up` command
 
 ## Test behaviour
 EXABGP creates an iBGP session with QUAGGA1
+
 QUAGGA1 creates an eBGP session with QUAGGA2
+
 Socket.IO client subscribes for 0.0.0.0/8 prefix to Socket.IO server
+
 QUAGGA2 announces 2.0.0.0/8
+
 QUAGGA1 announces 1.0.0.0/8
+
 EXABGP receives announcements and forwards them to Socket.IO client
