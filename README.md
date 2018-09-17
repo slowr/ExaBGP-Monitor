@@ -1,39 +1,23 @@
-# ExaBGP-Monitor
+# ExaBGP Monitor with Socket.IO Server, Socket.IO Client and Quagga iBGP Peer
 
-An ExaBGP Control Plane monitor that connects with a BGP Speaker and has a Socket.IO interface to propagate all control-plane messages.
+This repository contains three docker images:
 
-You need to provide the local ip address, the ip address of the BGP Speaker and the AS Number through the enviroment variables.
+i) An ExaBGP router with Socket.IO server embeded exposed on port 5000
+ii) A python Socket.IO client that retrieves BGP update messages from the ExaBGP router in JSON format
+iii) A Quagga BGP router
 
-## Enviroment Variables
+# Run
 
-`LOCAL_IP` : Sets ExaBGP-Monitors local ip and also router id
+To run a simple test case use `docker-compose up` command
 
-`REMOTE_IP` : Sets Neighbors IP (BGP Speakers IP) to BGP the configuration
+## Topology
 
-`LOCAL_AS` : Sets the AS in the BGP configuration (needs to be the same as the BGP Speakers to use iBGP)
+    Socket.IO client <-- <BGP UPDATES> --> Socket.IO server / ExaBGP Monitor <-- <iBGP SESSION> --> QUAGGA1 <-- <eBGP SESSION> --> QUAGGA2
 
-## Example
-
-docker run -e LOCAL_IP=10.0.0.1 -e REMOTE_IP=10.0.0.2 -e LOCAL_AS=65001 mavromat/exabgp-monitor
-
-This will set a container with port 5000 exposed that you can connect with Socket.IO clients and retrieve the Control Plane BGP messages.
-
-## Socket.IO Events
-
-To Subscribe to the ExaBGP monitor:
-```
-Event: exa_subscribe
-Message: prefix as string (e.g. '10.0.0.0/8')
-```
-
-Messages sent from ExaBGP monitor to the subscriber:
-```
-Event: exa_message
-Message:
-    'type': Type of the BGP message (Now it only sends BGP Update messages; you can change server.py to send also withdraw messages)
-    'timestamp': Timestamp
-    'peer': Peer of the BGP message
-    'host': String identifier of the monitor (default 'exabgp')
-    'path': BGP Update AS Path
-    'prefix': Prefix that corresponds to the BGP Upate message
-```
+## Test behaviour
+EXABGP creates an iBGP session with QUAGGA1
+QUAGGA1 creates an eBGP session with QUAGGA2
+Socket.IO client subscribes for 0.0.0.0/8 prefix to Socket.IO server
+QUAGGA2 announces 2.0.0.0/8
+QUAGGA1 announces 1.0.0.0/8
+EXABGP receives announcements and forwards them to Socket.IO client
