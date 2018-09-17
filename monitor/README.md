@@ -18,15 +18,15 @@ docker run -e LOCAL_IP=10.0.0.1 -e REMOTE_IP=10.0.0.2 -e LOCAL_AS=65001 mavromat
 
 This will set a container with port 5000 exposed that you can connect with Socket.IO clients and retrieve the Control Plane BGP messages.
 
-## Socket.IO Events
+## Socket.IO Events/Messages
 
 To Subscribe to the ExaBGP monitor:
 ```
 Event: exa_subscribe
-Message: prefix as string (e.g. '10.0.0.0/8')
+Message: prefixes as a list (e.g. ['10.0.0.0/8', '20.0.0.0/8'])
 ```
 
-Messages sent from ExaBGP monitor to the subscriber:
+Messages sent from ExaBGP monitor to the socket.io client/subscriber:
 ```
 Event: exa_message
 Message:
