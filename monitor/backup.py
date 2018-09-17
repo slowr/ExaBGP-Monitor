@@ -1,14 +1,16 @@
 #!/usr/bin/python
 import sys
 import argparse
-from sys import stdin, stdout, stderr
-from flask import Flask, abort
-import socketio
+from sys import stdin, stderr, exit
+from flask import Flask, abort, request
+from flask_socketio import SocketIO, emit
 import json
-import logging
 import radix
+import time
+import thread
 import traceback
 import logging
+
 
 
 log = logging.getLogger('artemis')
@@ -21,14 +23,9 @@ formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 # add the handlers to the logger
 log.addHandler(handler)
-
-async_mode = 'threading'
-sio = socketio.Server(logger=False, async_mode=async_mode)
 app = Flask(__name__)
-app.wsgi_app = socketio.Middleware(sio, app.wsgi_app)
 app.config['SECRET_KEY'] = 'secret!'
-
-thread = None
+sio = SocketIO(app)
 clients = {}
 hostname = ''
 
@@ -53,34 +50,36 @@ def message_parser(line):
                         for sid, prefix_tree in clients.items():
                             if prefix_tree.search_best(prefix):
                                 log.info('Sending to {} for {}'.format(sid, prefix))
-                                sio.emit('exa_message', message, room=sid)
+                                emit('exa_message', message, room=sid)
     except:
         log.info(traceback.format_exc())
 
 
 def exabgp_update_event():
-    while True:
-        line = stdin.readline().strip()
-        messages = message_parser(line)
-
-
-sio.start_background_task(exabgp_update_event)
+    try:
+        while True:
+            line = stdin.readline().strip()
+            messages = message_parser(line)
+    except KeyboardInterrupt:
+        pass
 
 
 @sio.on('connect')
-def artemis_connect(sid, environ):
+def artemis_connect():
+    sid = request.sid
     log.info('connect {}'.format(sid))
 
 
 @sio.on('disconnect')
-def artemis_disconnect(sid):
-    if sid in clients:
-        del clients[sid]
-    log.info('disconect {}'.format(sid))
+def sio_disconnect():
+    sid = request.sid
+    log.info('disconnect {}'.format(sid))
+    clients.pop(sid, None)
 
 
 @sio.on('exa_subscribe')
-def artemis_exa_subscribe(sid, message):
+def sio_exa_subscribe(message):
+    sid = request.sid
     log.info('exa_subscribe {}'.format(sid))
     all_prefixes = []
     try:
@@ -89,22 +88,22 @@ def artemis_exa_subscribe(sid, message):
             prefix_tree.add(prefix)
         clients[sid] = prefix_tree
     except:
-        log.info('invalid format received from %s'.format(str(sid)))
-    log.info('subscribe {} for {}'.format(sid, message))
+        log.info('Invalid format received from %s'.format(sid))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ExaBGP Monitor Server')
     parser.add_argument('--name', type=str, dest='name', default='exabgp',
                         help='Hostname for ExaBGP monitor')
-    parser.add_argument('--ssl', type=bool, nargs='?', dest='ssl', default=False,
-                        help='Flag to use SSL')
     args = parser.parse_args()
 
     hostname = args.name
 
-    if args.ssl:
-        app.run(ssl_context='adhoc', host='0.0.0.0')
-    else:
-        log.info('Starting Socket.io server..')
-        app.run(host='0.0.0.0')
+
+    try:
+        log.info('Starting Socket.IO server..')
+        sio.start_background_task(exabgp_update_event)
+        sio.run(app)
+    except KeyboardInterrupt:
+        pass
+

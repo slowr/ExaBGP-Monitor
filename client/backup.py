@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from socketIO_client import SocketIOBaseNamespace
+from socketIO_client import SocketIO, BaseNamespace
 import traceback
 # import logging
 # logging.getLogger('socketIO-client').setLevel(logging.DEBUG)

@@ -1,46 +1,23 @@
 #!/usr/bin/python
 import traceback
-from socketIO_client import SocketIO
+from socketIO_client import SocketIO, BaseNamespace
 import os
 
-host = os.getenv('EXABGP_HOST', 'localhost:5000')
-
-class ExaBGP():
-
-
-    def __init__(self, prefixes, host):
-        self.config = {}
-        self.config['host'] = host
-        self.config['prefixes'] = prefixes
-
-
-    def start(self):
-        while True:
-            with SocketIO('http://' + self.config['host']) as sio:
-
-
-                def on_msg(bgp_message):
-                    print('msg {}'.format(bgp_message))
-
-
-                def on_disconnect():
-                    print('disconnect')
-                    sio.disconnect()
-
-
-                sio.on('connect', on_connect)
-                sio.on('exa_message', on_msg)
-                sio.on('disconnect', on_disconnect)
-
-                prefixes_ = {'prefixes': self.config['prefixes']}
-                sio.emit('exa_subscribe', prefixes_)
-
-                sio.wait()
-
 try:
-    exa = ExaBGP(['0.0.0.0/0'], host)
-    exa.start()
+    host = os.getenv('EXABGP_HOST', 'localhost:5000')
+
+    with SocketIO('http://{}'.format(host), namespace=BaseNamespace, wait_for_connection=False) as sio:
+
+        def on_msg(bgp_message):
+            print('msg {}'.format(bgp_message))
+
+        sio.on('exa_message', on_msg)
+
+        prefixes = {'prefixes': ['0.0.0.0/0']}
+        sio.emit('exa_subscribe', prefixes)
+
+        sio.wait()
 except KeyboardInterrupt:
-    sio.disconnect()
+    pass
 except:
     traceback.print_exc()
