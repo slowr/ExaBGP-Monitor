@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 RUN sed -i 's?/usr/bin/python?'`which python`'?' client.py
 
-ENTRYPOINT ["./client.py"]
+ENTRYPOINT ["./entrypoint.sh"]

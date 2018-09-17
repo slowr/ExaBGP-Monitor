@@ -2,7 +2,7 @@
 import sys
 import argparse
 from sys import stdin, stdout, stderr
-from flask import Flask, abort
+from flask import Flask
 import socketio
 import json
 import logging
@@ -28,9 +28,9 @@ app = Flask(__name__)
 app.wsgi_app = socketio.Middleware(sio, app.wsgi_app)
 app.config['SECRET_KEY'] = 'secret!'
 
-thread = None
 clients = {}
 hostname = ''
+thread = None
 
 
 def message_parser(line):
@@ -64,19 +64,19 @@ def exabgp_update_event():
         messages = message_parser(line)
 
 
-sio.start_background_task(exabgp_update_event)
-
-
 @sio.on('connect')
 def artemis_connect(sid, environ):
     log.info('connect {}'.format(sid))
+    global thread
+    if thread is None:
+        thread = sio.start_background_task(exabgp_update_event)
 
 
 @sio.on('disconnect')
 def artemis_disconnect(sid):
+    log.info('disconnect {}'.format(sid))
     if sid in clients:
         del clients[sid]
-    log.info('disconect {}'.format(sid))
 
 
 @sio.on('exa_subscribe')
@@ -89,7 +89,7 @@ def artemis_exa_subscribe(sid, message):
             prefix_tree.add(prefix)
         clients[sid] = prefix_tree
     except:
-        log.info('invalid format received from %s'.format(str(sid)))
+        log.info(traceback.format_exc())
     log.info('subscribe {} for {}'.format(sid, message))
 
 
@@ -97,13 +97,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ExaBGP Monitor Server')
     parser.add_argument('--name', type=str, dest='name', default='exabgp',
                         help='Hostname for ExaBGP monitor')
-    parser.add_argument('--ssl', type=bool, nargs='?', dest='ssl', default=False,
-                        help='Flag to use SSL')
+    parser.add_argument('--ssl', dest='ssl', default=False,
+                        help='Flag to use SSL', action='store_true')
     args = parser.parse_args()
 
     hostname = args.name
+    ssl = args.ssl
 
-    if args.ssl:
+    if ssl:
+        log.info('Starting Socket.io SSL server..')
         app.run(ssl_context='adhoc', host='0.0.0.0')
     else:
         log.info('Starting Socket.io server..')

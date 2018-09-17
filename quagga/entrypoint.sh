@@ -1,5 +1,7 @@
 #!/bin/sh
 
+./wait-for exabgp:5000
+
 cat >bgpd.conf <<EOL
 !
 hostname bgp
