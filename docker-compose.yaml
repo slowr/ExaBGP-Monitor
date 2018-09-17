@@ -1,0 +1,66 @@
+version: '3'
+services:
+    exabgp:
+        build: ./monitor/
+        container_name: exabgp
+        hostname: exabgp
+        environment:
+            LOCAL_HOST: 10.5.0.3
+            LOCAL_AS: 65001
+            REMOTE_HOST: 10.5.0.2
+        depends_on:
+            - quagga1
+            - quagga2
+        networks:
+            test:
+                ipv4_address: 10.5.0.3
+
+    quagga1:
+        build: ./quagga/
+        container_name: quagga1
+        hostname: quagga1
+        environment:
+            AS_NUMBER: 65001
+            LOCAL_IP: 10.5.0.2
+            ANNOUNCED_PREFIX: 1.0.0.0/8
+            NEIGHBOR_IP: 10.5.0.3
+            NEIGHBOR_AS: 65001
+            NEIGHBOR_IP2: 10.5.0.5
+            NEIGHBOR_AS2: 65002
+        networks:
+            test:
+                ipv4_address: 10.5.0.2
+
+    quagga2:
+        build: ./quagga/
+        container_name: quagga2
+        hostname: quagga2
+        environment:
+            AS_NUMBER: 65002
+            LOCAL_IP: 10.5.0.5
+            ANNOUNCED_PREFIX: 2.0.0.0/8
+            NEIGHBOR_IP: 10.5.0.2
+            NEIGHBOR_AS: 65001
+        networks:
+            test:
+                ipv4_address: 10.5.0.5
+
+    client:
+        build: ./client/
+        container_name: client
+        hostname: client
+        environment:
+            EXABGP_HOST: "10.5.0.3:5000"
+        depends_on:
+            - exabgp
+            - quagga1
+            - quagga2
+        networks:
+            test:
+                ipv4_address: 10.5.0.4
+networks:
+    test:
+        ipam:
+            driver: default
+            config:
+                - subnet: 10.5.0.0/16
