@@ -22,6 +22,9 @@ handler.setFormatter(formatter)
 # add the handlers to the logger
 log.addHandler(handler)
 
+wz_log = logging.getLogger('werkzeug')
+wz_log.setLevel(logging.ERROR)
+
 async_mode = 'threading'
 sio = socketio.Server(logger=False, async_mode=async_mode)
 app = Flask(__name__)

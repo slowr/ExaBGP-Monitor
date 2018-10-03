@@ -4,17 +4,15 @@ An ExaBGP Control Plane monitor that connects with a BGP Speaker and has a Socke
 
 You need to provide the local ip address, the ip address of the BGP Speaker and the AS Number through the enviroment variables.
 
-## Enviroment Variables
+## ExaBGP Configuration
 
-`LOCAL_IP` : Sets ExaBGP-Monitors local ip and also router id
+You can provide your own ExaBGP configuration by mounting the configuration file to /home/config/exabgp.conf.
 
-`REMOTE_IP` : Sets Neighbors IP (BGP Speakers IP) to BGP the configuration
-
-`LOCAL_AS` : Sets the AS in the BGP configuration (needs to be the same as the BGP Speakers to use iBGP)
+Use the sample exabgp.conf for example and look into ExaBGP configuration for more details.
 
 ## Example
 
-docker run -e LOCAL_IP=10.0.0.1 -e REMOTE_IP=10.0.0.2 -e LOCAL_AS=65001 mavromat/exabgp-monitor
+docker run -v $(pwd)/exabgp.conf:/home/config/exabgp.conf mavromat/exabgp-monitor
 
 This will set a container with port 5000 exposed that you can connect with Socket.IO clients and retrieve the Control Plane BGP messages.
 

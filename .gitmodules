@@ -1,0 +1,4 @@
+[submodule "monitor/exabgp"]
+	path = monitor/exabgp
+	url = https://github.com/Exa-Networks/exabgp
+	branch = 3.4
