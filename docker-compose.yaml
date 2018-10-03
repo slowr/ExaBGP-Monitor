@@ -5,7 +5,7 @@ services:
         container_name: exabgp
         hostname: exabgp
         volumes:
-            - ./monitor/exabgp.conf:/root/config/exabgp.conf
+            - ./monitor/exabgp.conf:/home/config/exabgp.conf
         depends_on:
             - quagga1
             - quagga2
