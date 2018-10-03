@@ -12,7 +12,7 @@ Use the sample exabgp.conf for example and look into ExaBGP configuration for mo
 
 ## Example
 
-docker run -v $(pwd)/exabgp.conf:/home/config/exabgp.conf mavromat/exabgp-monitor
+`docker run -v $(pwd)/exabgp.conf:/home/config/exabgp.conf mavromat/exabgp-monitor`
 
 This will set a container with port 5000 exposed that you can connect with Socket.IO clients and retrieve the Control Plane BGP messages.
 
