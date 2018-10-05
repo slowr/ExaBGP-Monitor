@@ -40,8 +40,7 @@ def message_parser(line):
     try:
         temp_message = json.loads(line)
         if temp_message['type'] == 'update':
-            log.info('message: {}'.format(temp_message))
-            log.info('clients: {}'.format(clients))
+            log.debug('message: {}'.format(temp_message))
             for origin in temp_message['neighbor']['message']['update']['announce']['ipv4 unicast']:
                 if 'as-path' in temp_message['neighbor']['message']['update']['attribute']:
                     message = {
@@ -55,10 +54,10 @@ def message_parser(line):
                         message['prefix'] = prefix
                         for sid, prefix_tree in clients.items():
                             if prefix_tree.search_best(prefix):
-                                log.info('Sending to {} for {}'.format(sid, prefix))
+                                log.debug('Sending to {} for {}'.format(sid, prefix))
                                 sio.emit('exa_message', message, room=sid)
     except:
-        log.info(traceback.format_exc())
+        log.exception('message exception')
 
 
 def exabgp_update_event():
