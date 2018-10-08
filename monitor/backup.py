@@ -12,7 +12,6 @@ import traceback
 import logging
 
 
-
 log = logging.getLogger('artemis')
 log.setLevel(logging.INFO)
 # create a file handler
@@ -49,9 +48,11 @@ def message_parser(line):
                         message['prefix'] = prefix
                         for sid, prefix_tree in clients.items():
                             if prefix_tree.search_best(prefix):
-                                log.info('Sending to {} for {}'.format(sid, prefix))
+                                log.info(
+                                    'Sending to {} for {}'.format(
+                                        sid, prefix))
                                 emit('exa_message', message, room=sid)
-    except:
+    except BaseException:
         log.info(traceback.format_exc())
 
 
@@ -87,7 +88,7 @@ def sio_exa_subscribe(message):
         for prefix in message['prefixes']:
             prefix_tree.add(prefix)
         clients[sid] = prefix_tree
-    except:
+    except BaseException:
         log.info('Invalid format received from %s'.format(sid))
 
 
@@ -99,11 +100,9 @@ if __name__ == '__main__':
 
     hostname = args.name
 
-
     try:
         log.info('Starting Socket.IO server..')
         sio.start_background_task(exabgp_update_event)
         sio.run(app)
     except KeyboardInterrupt:
         pass
-

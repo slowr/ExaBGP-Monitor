@@ -6,7 +6,7 @@ import os
 try:
     host = os.getenv('EXABGP_HOST', 'localhost:5000')
 
-    with SocketIO('http://{}'.format(host), namespace=BaseNamespace, wait_for_connection=False) as sio:
+    with SocketIO('http://{}'.format(host), namespace=BaseNamespace) as sio:
 
         def on_msg(bgp_message):
             print('msg {}'.format(bgp_message))
@@ -19,5 +19,5 @@ try:
         sio.wait()
 except KeyboardInterrupt:
     pass
-except:
+except BaseException:
     traceback.print_exc()
