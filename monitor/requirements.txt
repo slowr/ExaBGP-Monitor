@@ -16,7 +16,7 @@ monotonic==1.5
 py-radix==0.10.0
 pycparser==2.18
 pyOpenSSL==18.0.0
-python-engineio==2.2.0
+python-engineio==3.8.2.post1
 python-socketio==2.0.0
 six==1.11.0
 Werkzeug==0.12.2
