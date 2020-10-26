@@ -1,12 +1,16 @@
 #!/usr/bin/python
 import argparse
 from sys import stdin
+from sys import stderr
+from sys import stdout
 from flask import Flask
 import socketio
 import json
 import radix
+import time
 import traceback
 import logging
+from threading import Lock
 
 
 log = logging.getLogger('artemis')
@@ -32,6 +36,7 @@ app.config['SECRET_KEY'] = 'secret!'
 clients = {}
 hostname = ''
 thread = None
+lock = Lock()
 
 
 def message_parser(line):
@@ -57,12 +62,18 @@ def message_parser(line):
                         }
                         for prefix in announce_msg['ipv4 unicast'][origin]:
                             message['prefix'] = prefix
-                            for sid, prefix_tree in clients.items():
-                                if prefix_tree.search_best(prefix):
-                                    log.debug(
-                                        'Sending to {} for {}'.format(
-                                            sid, prefix))
-                                    sio.emit('exa_message', message, room=sid)
+                            lock.acquire()
+                            try:
+                                for sid, prefix_tree in clients.items():
+                                    if prefix_tree.search_best(prefix):
+                                        log.debug(
+                                            'Sending to {} for {}'.format(
+                                                sid, prefix))
+                                        sio.emit('exa_message', message, room=sid)
+                            except Exception:
+                                log.exception('message exception')
+                            finally:
+                                lock.release()
             elif 'withdraw' in update_msg:
                 withdraw_msg = update_msg['withdraw']
                 message = {
@@ -73,12 +84,18 @@ def message_parser(line):
                 }
                 for prefix in withdraw_msg['ipv4 unicast']:
                     message['prefix'] = prefix
-                    for sid, prefix_tree in clients.items():
-                        if prefix_tree.search_best(prefix):
-                            log.debug(
-                                'Sending to {} for {}'.format(
-                                    sid, prefix))
-                            sio.emit('exa_message', message, room=sid)
+                    lock.acquire()
+                    try:
+                        for sid, prefix_tree in clients.items():
+                            if prefix_tree.search_best(prefix):
+                                log.debug(
+                                    'Sending to {} for {}'.format(
+                                        sid, prefix))
+                                sio.emit('exa_message', message, room=sid)
+                    except Exception:
+                        log.exception('message exception')
+                    finally:
+                        lock.release()
     except Exception:
         log.exception('message exception')
 
@@ -100,8 +117,10 @@ def artemis_connect(sid, environ):
 @sio.on('disconnect')
 def artemis_disconnect(sid):
     log.info('disconnect {}'.format(sid))
+    lock.acquire()
     if sid in clients:
         del clients[sid]
+    lock.release()
 
 
 @sio.on('exa_subscribe')
@@ -111,10 +130,22 @@ def artemis_exa_subscribe(sid, message):
         prefix_tree = radix.Radix()
         for prefix in message['prefixes']:
             prefix_tree.add(prefix)
+        lock.acquire()
         clients[sid] = prefix_tree
+        lock.release()
     except BaseException:
         log.info(traceback.format_exc())
     log.info('subscribe {} for {}'.format(sid, message))
+
+
+@sio.on("route_command")
+def route_command(sid, message):
+    log.info("route_command '{}' from {}".format(message["command"], sid))
+    stderr.write(message["command"] + "\n")
+    stderr.flush()
+    stdout.write(message["command"] + "\n")
+    stdout.flush()
+    time.sleep(1)
 
 
 if __name__ == '__main__':
