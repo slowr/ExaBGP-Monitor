@@ -19,4 +19,4 @@ pyOpenSSL==18.0.0
 python-engineio==2.2.0
 python-socketio==2.0.0
 six==1.11.0
-Werkzeug==0.12.2
+Werkzeug==0.15.3
