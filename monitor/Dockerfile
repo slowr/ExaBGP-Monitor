@@ -5,6 +5,7 @@ WORKDIR /home
 
 RUN mkdir -p /usr/lib/python2.7.14/bin/
 RUN ln -s /usr/local/lib/pyenv/versions/2.7.15/bin/python /usr/lib/python2.7.14/bin/python
+RUN mkdir -p /etc/exabgp/
 RUN mkdir config
 RUN mkdir exabgp
 COPY requirements.txt ./
