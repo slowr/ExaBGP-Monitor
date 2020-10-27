@@ -49,7 +49,13 @@ def message_parser(line):
 
             if 'announce' in update_msg:
                 announce_msg = update_msg['announce']
-                for origin in announce_msg['ipv4 unicast']:
+                v4_origins = {}
+                if 'ipv4 unicast' in announce_msg:
+                    v4_origins = announce_msg['ipv4 unicast']
+                v6_origins = {}
+                if 'ipv6 unicast' in announce_msg:
+                    v6_origins = announce_msg['ipv6 unicast']
+                for origin in set(v4_origins.keys()).union(set(v6_origins.keys())):
                     if 'as-path' in update_msg['attribute']:
                         communities = [{'asn': k[0], 'value': k[1]} for k in update_msg['attribute'].get('community', [])]
                         message = {
@@ -60,7 +66,12 @@ def message_parser(line):
                             'path': update_msg['attribute']['as-path'],
                             'communities': communities
                         }
-                        for prefix in announce_msg['ipv4 unicast'][origin]:
+                        prefixes = []
+                        if origin in v4_origins:
+                            prefixes.extend(v4_origins[origin])
+                        if origin in v6_origins:
+                            prefixes.extend(v6_origins[origin])
+                        for prefix in prefixes:
                             message['prefix'] = prefix
                             lock.acquire()
                             try:
@@ -82,7 +93,12 @@ def message_parser(line):
                     'peer_asn': temp_message['neighbor']['asn']['peer'],
                     'host': hostname
                 }
-                for prefix in withdraw_msg['ipv4 unicast']:
+                prefixes = []
+                if 'ipv4 unicast' in withdraw_msg:
+                    prefixes.extend(withdraw_msg['ipv4 unicast'])
+                if 'ipv6 unicast' in withdraw_msg:
+                    prefixes.extend(withdraw_msg['ipv6 unicast'])
+                for prefix in prefixes:
                     message['prefix'] = prefix
                     lock.acquire()
                     try:
