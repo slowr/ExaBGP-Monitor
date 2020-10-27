@@ -1,4 +1,4 @@
-FROM jfloff/alpine-python:2.7
+FROM mavromat/alpine-python:2.7
 MAINTAINER Dimitrios Mavrommatis <jim.mavrommatis@gmail.com>
 
 WORKDIR /home
